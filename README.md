@@ -2,6 +2,10 @@
 
 A full-stack web application for renting bikes and skis, built with Node.js, Express, React, and SQLite.
 
+> 🤖 **Built with AI Assistance**: This project was developed using GitHub Copilot AI agent in Visual Studio Code, demonstrating rapid full-stack application development.
+
+⚠️ **SECURITY WARNING**: This project is designed as a vulnerable application for educational purposes and security testing with Kali Linux and similar penetration testing tools. **DO NOT USE IN PRODUCTION**. This application contains intentional vulnerabilities for learning and testing purposes.
+
 ## Features
 
 - 🚴 Browse and search bike & ski rentals
@@ -28,10 +32,18 @@ A full-stack web application for renting bikes and skis, built with Node.js, Exp
 
 ## Installation & Setup
 
-### 1. Clone/Create the project
+### 1. Clone the repository
 
 ```bash
-cd /Users/ahmedkareem/brisk
+git clone https://github.com/grep-kareem/MSSE642_Spring2026.git
+cd MSSE642_Spring2026
+```
+
+Or if you want to use a different directory name:
+
+```bash
+git clone https://github.com/grep-kareem/MSSE642_Spring2026.git your-directory-name
+cd your-directory-name
 ```
 
 ### 2. Install dependencies
@@ -76,36 +88,59 @@ The app will be available at:
 - **Frontend**: http://localhost:3000
 - **API**: http://localhost:4000
 
-## Accessing from Another Machine (Kali Linux)
+## Accessing from Another Machine on Your Network
 
-To access the app from another machine on your network:
+To access the app from another machine (such as Kali Linux for security testing):
 
-### 1. Find your Mac's IP address
+### 1. Find your host machine's IP address
+
+**On macOS:**
 
 ```bash
-ipconfig getifaddr en0  # or en1 for WiFi
+ipconfig getifaddr en0  # Ethernet
+ipconfig getifaddr en1  # WiFi
 # Example output: 192.168.1.100
 ```
 
-### 2. Update the frontend environment (if needed)
-
-The app uses relative `/api` paths which will work across the network. However, if you need explicit URLs:
-
-- Frontend: http://[YOUR_MAC_IP]:3000
-- API: http://[YOUR_MAC_IP]:4000
-
-### 3. Access from Kali
+**On Linux:**
 
 ```bash
-# From your Kali machine
-curl http://192.168.1.100:3000  # Replace with your Mac IP
+hostname -I
+# or
+ip addr show
 ```
 
-Or open in browser:
+### 2. Use the correct IP address
 
+When accessing from another machine on the same network:
+
+- Frontend: http://[YOUR_MACHINE_IP]:3000
+- API: http://[YOUR_MACHINE_IP]:4000
+
+Replace `[YOUR_MACHINE_IP]` with the actual IP address you found above.
+
+### 3. Example: Accessing from Kali Linux
+
+```bash
+# From your Kali machine, replace with your actual host IP
+curl http://192.168.1.100:3000
+firefox http://192.168.1.100:3000  # Open in browser
 ```
-http://192.168.1.100:3000
-```
+
+The app uses `/api` proxy paths internally, which work seamlessly across the network.
+
+## Security Testing with Kali Linux
+
+This application is intentionally designed with vulnerabilities for educational security testing purposes. Use this project to practice:
+
+- SQL Injection testing
+- Cross-Site Scripting (XSS)
+- Authentication bypass techniques
+- Session hijacking
+- API enumeration and exploitation
+- Input validation testing
+
+**Always test responsibly and only on systems you own or have permission to test.**
 
 ## Default Credentials
 
@@ -340,14 +375,21 @@ npm run db:seed
 
 ## Production Deployment
 
-For production:
+⚠️ **THIS APPLICATION IS NOT SUITABLE FOR PRODUCTION USE**
 
-1. Set `NODE_ENV=production`
-2. Use a persistent session store (currently in-memory)
-3. Enable HTTPS/SSL
-4. Use environment variables from a secure `.env` file
-5. Run database migrations: `npm run db:migrate:prod`
-6. Start with: `npm start` (in api directory)
+This project intentionally contains security vulnerabilities for educational purposes. Before deploying any application to production:
+
+1. Remove all test/dummy data and credentials
+2. Implement proper security measures (HTTPS, CSRF protection, input sanitization)
+3. Use a proper session store (Redis, database-backed)
+4. Enable security headers and middleware
+5. Audit code for vulnerabilities
+6. Use a reverse proxy (nginx, Apache)
+7. Set `NODE_ENV=production`
+8. Use environment variables from a secure `.env` file
+9. Run database migrations: `npm run db:migrate:prod`
+
+**If you're interested in security hardening, use this project as a learning tool to identify and understand common vulnerabilities.**
 
 ## License
 
