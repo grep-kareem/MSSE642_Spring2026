@@ -1,0 +1,19 @@
+{
+  "name": "brisk",
+  "version": "1.0.0",
+  "description": "Online bike and ski rentals app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "install": "npm install --workspace=api && npm install --workspace=web",
+    "dev": "npm run dev --workspace=api & npm run dev --workspace=web",
+    "build": "npm run build --workspace=api && npm run build --workspace=web",
+    "db:migrate": "npm run migrate --workspace=api",
+    "db:seed": "npm run seed --workspace=api",
+    "db:studio": "npm run studio --workspace=api"
+  },
+  "workspaces": [
+    "api",
+    "web"
+  ]
+}
