@@ -1,7 +1,3 @@
-Assignment \#1 – Pen Testing Lab Setup  
-MSSE 642 – Penetration Testing with Kali Linux  
-Student: Ahmed Kareem
-
 Overview
 
 The goal of this assignment was to build a local penetration testing lab
