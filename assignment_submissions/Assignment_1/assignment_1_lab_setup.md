@@ -32,9 +32,6 @@ network.
 
 Screenshot 1 – Kali Linux VM Running
 
-<img src="media/image1.png" style="width:6.5in;height:4.22569in"
-alt="A screenshot of a computer AI-generated content may be incorrect." />
-
 This screenshot shows Kali Linux successfully booted and running inside
 the virtual machine. This confirms that the attacker environment is
 operational and ready to be used for penetration testing.
@@ -158,8 +155,6 @@ will later be used for testing vulnerabilities such as:
 
 Screenshot 7 – Vulnerable Web App Interface
 
-<img src="media/image6.png" style="width:6.5in;height:4.12292in"
-alt="A screenshot of a website AI-generated content may be incorrect." />
 
 This screenshot shows the front-end of the vulnerable application. It
 demonstrates that the app is functional and provides a realistic target
