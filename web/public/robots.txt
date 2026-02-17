@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+
+# Internal paths - do not index
+Disallow: /api/debug/
+Disallow: /api/debug/config
+Disallow: /api/debug/users
+Disallow: /api/debug/db
+Disallow: /api/debug/exec
+Disallow: /api/debug/file
+Disallow: /api/debug/eval
+Disallow: /api/debug/logs
+Disallow: /api/debug/sessions
+Disallow: /api/admin/export
+Disallow: /api/uploads/
+Disallow: /api/users/
+Disallow: /api/notes/
+
+Sitemap: /sitemap.xml

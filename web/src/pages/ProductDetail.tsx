@@ -13,19 +13,34 @@ interface Product {
   imageUrl?: string;
 }
 
+interface Review {
+  id: number;
+  rating: number;
+  title: string;
+  body: string;
+  createdAt: string;
+  user: { id: number; name: string; email: string };
+}
+
 export const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [product, setProduct] = useState<Product | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [reserving, setReserving] = useState(false);
   const [message, setMessage] = useState("");
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewBody, setReviewBody] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     fetchProduct();
+    fetchReviews();
   }, [id]);
 
   const fetchProduct = async () => {
@@ -37,6 +52,47 @@ export const ProductDetail: React.FC = () => {
       console.error("Failed to fetch product:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchReviews = async () => {
+    try {
+      const res = await fetch(`/api/reviews/product/${id}`);
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    } catch (error) {
+      console.error("Failed to fetch reviews:", error);
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setSubmittingReview(true);
+    try {
+      const res = await fetch("/api/reviews", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productId: parseInt(id!),
+          rating: reviewRating,
+          title: reviewTitle,
+          body: reviewBody,
+        }),
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        setReviewTitle("");
+        setReviewBody("");
+        setReviewRating(5);
+        fetchReviews();
+      }
+    } catch (error) {
+      console.error("Failed to submit review:", error);
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -198,6 +254,87 @@ export const ProductDetail: React.FC = () => {
                 </button>
               </form>
             </div>
+          </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div className="reviews-section">
+          <h2>Customer Reviews ({reviews.length})</h2>
+
+          {user && (
+            <form onSubmit={handleSubmitReview} className="review-form">
+              <h3>Write a Review</h3>
+              <div className="form-group">
+                <label>Rating</label>
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(parseInt(e.target.value))}
+                >
+                  {[5, 4, 3, 2, 1].map((r) => (
+                    <option key={r} value={r}>
+                      {"★".repeat(r)}
+                      {"☆".repeat(5 - r)} ({r})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Title</label>
+                <input
+                  type="text"
+                  value={reviewTitle}
+                  onChange={(e) => setReviewTitle(e.target.value)}
+                  placeholder="Review title..."
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Review (HTML supported)</label>
+                <textarea
+                  value={reviewBody}
+                  onChange={(e) => setReviewBody(e.target.value)}
+                  placeholder="Write your review... HTML tags are supported for formatting!"
+                  required
+                  rows={4}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={submittingReview}
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
+              </button>
+            </form>
+          )}
+
+          <div className="reviews-list">
+            {reviews.length === 0 ? (
+              <p>No reviews yet. Be the first to review!</p>
+            ) : (
+              reviews.map((review) => (
+                <div key={review.id} className="review-card">
+                  <div className="review-header">
+                    <span className="review-stars">
+                      {"★".repeat(review.rating)}
+                      {"☆".repeat(5 - review.rating)}
+                    </span>
+                    <strong>{review.title}</strong>
+                    <span className="review-author">
+                      by {review.user.name} ({review.user.email})
+                    </span>
+                  </div>
+                  {/* VULN: Stored XSS - renders raw HTML from user input */}
+                  <div
+                    className="review-body"
+                    dangerouslySetInnerHTML={{ __html: review.body }}
+                  />
+                  <small className="review-date">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </small>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

@@ -10,7 +10,8 @@ const prisma = new PrismaClient();
 const RegisterSchema = z.object({
   email: z.string().email(),
   name: z.string().min(1),
-  password: z.string().min(6),
+  password: z.string().min(1), // VULN: No minimum password length
+  role: z.string().optional(), // VULN: User can set their own role
 });
 
 const LoginSchema = z.object({
@@ -36,7 +37,7 @@ router.post("/register", async (req: Request, res: Response) => {
         email: data.email,
         name: data.name,
         password: hashedPassword,
-        role: "customer",
+        role: data.role || "customer", // VULN: User-supplied role accepted
       },
     });
 
@@ -66,12 +67,18 @@ router.post("/login", async (req: Request, res: Response) => {
 
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      // VULN: User enumeration - different error for non-existent email
+      return res
+        .status(401)
+        .json({ error: "No account found with this email" });
     }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
     if (!passwordMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      // VULN: User enumeration - confirms email exists but password is wrong
+      return res
+        .status(401)
+        .json({ error: "Incorrect password for this account" });
     }
 
     (req.session as any).userId = user.id;

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>http://localhost:3000/</loc></url>
+  <url><loc>http://localhost:3000/login</loc></url>
+  <url><loc>http://localhost:3000/register</loc></url>
+  <url><loc>http://localhost:3000/dashboard</loc></url>
+  <url><loc>http://localhost:3000/admin</loc></url>
+  <url><loc>http://localhost:4000/api/health</loc></url>
+  <url><loc>http://localhost:4000/api/products</loc></url>
+  <url><loc>http://localhost:4000/api/search</loc></url>
+  <url><loc>http://localhost:4000/api/debug/config</loc></url>
+  <url><loc>http://localhost:4000/api/users</loc></url>
+  <url><loc>http://localhost:4000/api/notes/public</loc></url>
+</urlset>

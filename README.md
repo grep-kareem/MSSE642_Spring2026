@@ -70,10 +70,11 @@ npm run db:seed
 
 This creates the initial data including:
 
-- 1 admin user
-- 1 customer user
-- 6 products (bikes and skis)
-- 1 sample reservation
+- 2 admin users, 1 staff, 6 customers (with weak/common passwords)
+- 10 products (bikes and skis)
+- 5 sample reservations
+- 5 product reviews
+- 4 user notes (some with fake sensitive data)
 
 ### 5. Run the application
 
@@ -133,12 +134,43 @@ The app uses `/api` proxy paths internally, which work seamlessly across the net
 
 This application is intentionally designed with vulnerabilities for educational security testing purposes. Use this project to practice:
 
-- SQL Injection testing
-- Cross-Site Scripting (XSS)
-- Authentication bypass techniques
-- Session hijacking
-- API enumeration and exploitation
-- Input validation testing
+### Vulnerability Categories
+
+| #   | Category                         | Endpoints / Areas                                                                                                |
+| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 1   | **SQL Injection**                | `GET /api/users?search=`, `GET /api/debug/db?query=`, `GET /api/admin/export?table=`                             |
+| 2   | **Stored XSS**                   | `POST /api/reviews` → body rendered as raw HTML on product pages                                                 |
+| 3   | **Reflected XSS**                | `GET /api/search?q=` returns HTML with unsanitized query                                                         |
+| 4   | **Command Injection**            | `POST /api/debug/exec` executes shell commands                                                                   |
+| 5   | **Path Traversal**               | `GET /api/debug/file?path=`, `GET /api/uploads/files/:filename`                                                  |
+| 6   | **IDOR**                         | `GET /api/users/:id`, `GET /api/notes/:id`, `DELETE /api/reviews/:id`, `PUT /api/notes/:id`                      |
+| 7   | **Privilege Escalation**         | `PUT /api/users/profile` (mass assignment, set role=admin), `POST /api/auth/register` (role field accepted)      |
+| 8   | **Broken Authentication**        | Weak passwords, user enumeration on login, no rate limiting, no account lockout                                  |
+| 9   | **Insecure Password Reset**      | `POST /api/users/reset-password` (token leaked in response, base64 predictable tokens)                           |
+| 10  | **Information Disclosure**       | `GET /api/debug/config`, `GET /api/debug/users`, `GET /api/debug/logs`, verbose error messages with stack traces |
+| 11  | **SSRF**                         | `GET /api/fetch?url=` fetches arbitrary URLs from the server                                                     |
+| 12  | **Open Redirect**                | `GET /api/redirect?url=` redirects to any URL                                                                    |
+| 13  | **Arbitrary Code Execution**     | `POST /api/debug/eval` runs JavaScript via eval()                                                                |
+| 14  | **Unrestricted File Upload**     | `POST /api/uploads` accepts any file type, no size limit, filename path traversal                                |
+| 15  | **Insecure Session Config**      | httpOnly=false, sameSite=none, 1-year expiry, accessible via JavaScript                                          |
+| 16  | **Missing Security Headers**     | No CSP, X-Frame-Options, X-Content-Type-Options — clickjacking possible                                          |
+| 17  | **CORS Misconfiguration**        | Wildcard origin with credentials allowed                                                                         |
+| 18  | **Sensitive Data in Notes**      | Private notes accessible via IDOR; seed data contains fake credentials/keys                                      |
+| 19  | **Technology Fingerprinting**    | `X-Powered-By` and `Server` headers reveal stack; `/api/health` exposes version info                             |
+| 20  | **Directory/Endpoint Discovery** | `robots.txt` and `sitemap.xml` reveal hidden API paths                                                           |
+
+### Suggested Kali Tools
+
+- **Nikto** — Web server scanner (headers, fingerprinting, common paths)
+- **SQLmap** — Automated SQL injection (`sqlmap -u "http://target:4000/api/users?search=test" --dbs`)
+- **Burp Suite** — Intercepting proxy for manual testing (XSS, IDOR, CSRF)
+- **OWASP ZAP** — Automated web app scanner
+- **DirBuster / Gobuster** — Directory/endpoint enumeration
+- **Hydra** — Brute-force login (`hydra -l admin@brisk.com -P /usr/share/wordlists/rockyou.txt target http-post-form`)
+- **curl** — Manual API testing
+- **wfuzz** — Web fuzzer for parameter testing
+- **nmap** — Port scanning and service detection
+- **XSSer** — Automated XSS detection
 
 **Always test responsibly and only on systems you own or have permission to test.**
 
@@ -146,15 +178,17 @@ This application is intentionally designed with vulnerabilities for educational 
 
 After seeding, you can log in with:
 
-### Admin Account
-
-- **Email**: `admin@brisk.com`
-- **Password**: `admin123`
-
-### Customer Account
-
-- **Email**: `customer@brisk.com`
-- **Password**: `customer123`
+| Role     | Email                | Password      |
+| -------- | -------------------- | ------------- |
+| Admin    | `admin@brisk.com`    | `admin123`    |
+| Admin    | `manager@brisk.com`  | `manager1`    |
+| Staff    | `staff@brisk.com`    | `staff2024`   |
+| Customer | `customer@brisk.com` | `customer123` |
+| Customer | `jane@brisk.com`     | `password`    |
+| Customer | `bob@brisk.com`      | `123456`      |
+| Customer | `alice@brisk.com`    | `qwerty`      |
+| Customer | `charlie@brisk.com`  | `letmein`     |
+| Customer | `test@test.com`      | `test`        |
 
 ## Project Structure
 
@@ -169,12 +203,20 @@ brisk/
 │   │       ├── auth.ts      # Auth endpoints (register, login, logout)
 │   │       ├── products.ts  # Product endpoints (CRUD)
 │   │       ├── reservations.ts  # Reservation endpoints
-│   │       └── admin.ts     # Admin endpoints
+│   │       ├── admin.ts     # Admin endpoints
+│   │       ├── reviews.ts   # Product reviews (stored XSS)
+│   │       ├── users.ts     # User profiles (IDOR, SQLi, mass assignment)
+│   │       ├── notes.ts     # User notes (IDOR)
+│   │       ├── uploads.ts   # File uploads (unrestricted upload, path traversal)
+│   │       └── debug.ts     # Debug endpoints (RCE, info disclosure, SSRF)
 │   ├── prisma/
 │   │   └── schema.prisma    # Database schema
 │   ├── package.json
 │   └── tsconfig.json
 ├── web/                      # Frontend (React + Vite)
+│   ├── public/
+│   │   ├── robots.txt       # Reveals hidden paths
+│   │   └── sitemap.xml      # Reveals hidden endpoints
 │   ├── src/
 │   │   ├── main.tsx         # Entry point
 │   │   ├── App.tsx          # Router setup
@@ -184,7 +226,7 @@ brisk/
 │   │   │   └── Header.tsx   # Header component
 │   │   └── pages/
 │   │       ├── Home.tsx     # Product catalog
-│   │       ├── ProductDetail.tsx  # Product details & reservation
+│   │       ├── ProductDetail.tsx  # Product details, reservation & reviews (XSS)
 │   │       ├── Login.tsx    # Login page
 │   │       ├── Register.tsx # Registration page
 │   │       ├── Dashboard.tsx # Customer dashboard
@@ -234,8 +276,8 @@ npm run preview      # Preview production build
 
 ### Authentication
 
-- `POST /api/auth/register` - Register new user
-- `POST /api/auth/login` - Login user
+- `POST /api/auth/register` - Register new user (accepts role field — privilege escalation)
+- `POST /api/auth/login` - Login user (user enumeration via error messages)
 - `POST /api/auth/logout` - Logout user
 - `GET /api/auth/me` - Get current user
 
@@ -257,10 +299,65 @@ npm run preview      # Preview production build
 - `GET /api/reservations/:id` - Get reservation details
 - `PUT /api/reservations/:id` - Update reservation status
 
+### Reviews
+
+- `GET /api/reviews/product/:productId` - Get reviews for a product
+- `POST /api/reviews` - Create review (stored XSS via body field)
+- `DELETE /api/reviews/:id` - Delete review (IDOR — no ownership check)
+
+### Users
+
+- `GET /api/users` - List all users (leaks emails)
+- `GET /api/users?search=` - Search users (SQL injection)
+- `GET /api/users/:id` - Get user profile (IDOR — leaks password hash and private data)
+- `PUT /api/users/profile` - Update profile (mass assignment — can set role)
+- `POST /api/users/reset-password` - Request password reset (user enumeration, token leaked)
+- `POST /api/users/reset-password/confirm` - Confirm reset (weak token validation)
+
+### Notes
+
+- `GET /api/notes` - List current user's notes
+- `GET /api/notes/public` - List public notes
+- `GET /api/notes/:id` - Get note (IDOR — any auth user can read any note)
+- `POST /api/notes` - Create note
+- `PUT /api/notes/:id` - Update note (IDOR)
+- `DELETE /api/notes/:id` - Delete note (IDOR)
+
+### File Uploads
+
+- `POST /api/uploads` - Upload file (unrestricted type, path traversal in filename)
+- `GET /api/uploads` - List all uploads (shows all users' files)
+- `GET /api/uploads/files/:filename` - Download file (path traversal)
+- `DELETE /api/uploads/:id` - Delete upload (IDOR)
+
+### Search
+
+- `GET /api/search?q=` - HTML search results (reflected XSS)
+
 ### Admin
 
-- `GET /api/admin/users` - List all users
+- `GET /api/admin/users` - List all users (includes password hashes)
 - `GET /api/admin/reservations` - List all reservations
+- `GET /api/admin/export?table=&format=` - Export data (SQL injection via table name)
+- `PUT /api/admin/users/:id/role` - Change user role
+- `DELETE /api/admin/users/:id` - Delete user
+
+### Debug (No Authentication Required!)
+
+- `GET /api/debug/config` - Application config & environment variables
+- `GET /api/debug/users` - All users with password hashes
+- `GET /api/debug/db?query=` - Arbitrary SQL query execution
+- `POST /api/debug/exec` - System command execution (RCE)
+- `GET /api/debug/file?path=` - Read arbitrary files (path traversal)
+- `POST /api/debug/eval` - JavaScript eval() execution
+- `GET /api/debug/logs` - Application logs & environment
+- `GET /api/debug/sessions` - All active sessions
+
+### Miscellaneous
+
+- `GET /api/health` - Health check (leaks version info)
+- `GET /api/redirect?url=` - Open redirect
+- `GET /api/fetch?url=` - SSRF — fetch arbitrary URLs from server
 
 ## Features & Usage
 
@@ -307,20 +404,34 @@ npm run preview      # Preview production build
 
 - id, userId, expiresAt, createdAt
 
+### Reviews
+
+- id, productId, userId, rating, title, body (unsanitized HTML), timestamps
+
+### Notes
+
+- id, userId, title, content, isPublic (boolean), timestamps
+
+### UploadedFiles
+
+- id, userId, filename, originalName, mimetype, size, path, createdAt
+
 ## Validation
 
-Input validation is performed using Zod on all API requests:
+Input validation is intentionally weakened for security testing:
 
-- User registration (email, password strength, name)
-- Product creation/updates
-- Reservation creation (date validation, availability)
+- User registration accepts 1-character passwords and an optional `role` field (privilege escalation)
+- Reviews and notes accept raw HTML/JavaScript (no sanitization)
+- File uploads accept any file type with no size or content validation
+- Several endpoints use raw SQL with string interpolation (SQL injection)
+- User profile update accepts any fields via mass assignment
 
 ## Error Handling
 
-- User-friendly error messages returned in API responses
-- Input validation errors with detailed field information
-- 404 page for non-existent routes
-- Proper HTTP status codes (400, 401, 403, 404, 500)
+- **Intentionally verbose error messages** — stack traces, SQL errors, and internal paths are leaked in responses
+- Login errors reveal whether an email exists or not (user enumeration)
+- 404 responses include the attempted path and HTTP method
+- Debug endpoints expose full environment variables and configuration
 
 ## Environment Variables
 
@@ -368,10 +479,12 @@ npm run db:seed
 ## Development Notes
 
 - The API binds to `0.0.0.0` (all interfaces) for network access
-- Sessions use httpOnly cookies for security
-- Session timeout: 30 days
-- CORS is configured to allow the web origin only
-- All database operations use Prisma ORM for type safety
+- Session cookies have `httpOnly=false` (accessible via JavaScript), `sameSite=none`, and 1-year expiry
+- CORS is configured with wildcard origin + credentials (any site can make authenticated requests)
+- `X-Powered-By` and `Server` headers expose the technology stack
+- No security headers (CSP, X-Frame-Options, X-Content-Type-Options) are set
+- Debug routes are exposed without authentication
+- Several routes use `$queryRawUnsafe` with string interpolation
 
 ## Production Deployment
 
